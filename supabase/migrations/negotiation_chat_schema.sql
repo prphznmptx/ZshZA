@@ -117,13 +117,13 @@ COMMENT ON COLUMN public.task_negotiation_status.final_notes IS
 
 CREATE INDEX IF NOT EXISTS idx_task_proposals_status_active
   ON public.task_proposals USING btree (status)
-  WHERE status IN ('pending', 'counter_proposed') TABLESPACE pg_default;
+  WHERE status IN ('pending', 'counter_proposed');
 
 CREATE INDEX IF NOT EXISTS idx_task_messages_task_id_created_at
-  ON public.task_messages USING btree (task_id, created_at DESC) TABLESPACE pg_default;
+  ON public.task_messages USING btree (task_id, created_at DESC);
 
 CREATE INDEX IF NOT EXISTS idx_task_negotiation_status_status
-  ON public.task_negotiation_status USING btree (status) TABLESPACE pg_default;
+  ON public.task_negotiation_status USING btree (status);
 
 -- ===================================================================
 -- 7. HELPFUL VIEWS FOR NEGOTIATION
