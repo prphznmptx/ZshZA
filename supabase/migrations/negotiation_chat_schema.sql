@@ -216,13 +216,16 @@ CREATE POLICY task_message_attachments_view_policy
     EXISTS (
       SELECT 1 FROM task_messages tm
       WHERE tm.id = task_message_attachments.message_id
-      AND (tm.sender_id = auth.uid() OR
-           EXISTS (
-             SELECT 1 FROM task_proposals tp
-             WHERE tp.task_id = tm.task_id
-             AND (tp.provider_id = (SELECT id FROM user_profiles WHERE user_id = auth.uid())
-                  OR tp.manager_id = auth.uid())
-           ))
+      AND (
+        tm.sender_id = auth.uid()
+        OR EXISTS (
+          SELECT 1 FROM task_proposals tp
+          WHERE tp.task_id = tm.task_id
+          AND (
+            tp.provider_id = (SELECT id FROM user_profiles WHERE user_id = auth.uid())
+            OR tp.manager_id = auth.uid()
+          )
+        )
       )
     )
   );
