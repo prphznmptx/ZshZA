@@ -1400,6 +1400,8 @@ const TasksPage: React.FC = () => {
                             proposal={proposal}
                             taskTitle={task?.title || "Unknown Task"}
                             managerName="Manager"
+                            task={task}
+                            currentUserId={currentUser?.id}
                             onProposalUpdated={() => {
                               // Reload proposals
                               supabase

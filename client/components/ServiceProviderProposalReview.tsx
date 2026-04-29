@@ -19,13 +19,16 @@ import {
   DialogFooter,
 } from "./ui/dialog";
 import { CheckCircle, XCircle, MessageCircle, Loader } from "lucide-react";
-import { supabase, TaskProposal } from "../lib/supabase";
+import { supabase, TaskProposal, Task } from "../lib/supabase";
 import { toast } from "../hooks/use-toast";
+import NegotiationChat from "./NegotiationChat";
 
 interface ServiceProviderProposalReviewProps {
   proposal: TaskProposal | null;
   taskTitle: string;
   managerName: string;
+  task?: Task;
+  currentUserId?: string;
   onProposalUpdated?: () => void;
 }
 
@@ -35,10 +38,13 @@ export const ServiceProviderProposalReview: React.FC<ServiceProviderProposalRevi
   proposal,
   taskTitle,
   managerName,
+  task,
+  currentUserId,
   onProposalUpdated,
 }) => {
   const [selectedAction, setSelectedAction] = useState<ProposalAction | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [showNegotiationChat, setShowNegotiationChat] = useState(false);
   const [declineReason, setDeclineReason] = useState("");
   const [counterPrice, setCounterPrice] = useState("");
   const [counterNotes, setCounterNotes] = useState("");
@@ -286,10 +292,7 @@ export const ServiceProviderProposalReview: React.FC<ServiceProviderProposalRevi
                 size="sm"
                 variant="outline"
                 className="ml-auto border-sheraton-gold text-sheraton-gold hover:bg-sheraton-cream"
-                onClick={() => {
-                  setSelectedAction("chat");
-                  // This would navigate to live chat for this task
-                }}
+                onClick={() => setShowNegotiationChat(true)}
               >
                 <MessageCircle className="h-4 w-4 mr-2" />
                 Open Chat
@@ -416,6 +419,36 @@ export const ServiceProviderProposalReview: React.FC<ServiceProviderProposalRevi
               )}
             </Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Negotiation Chat Dialog */}
+      <Dialog open={showNegotiationChat} onOpenChange={setShowNegotiationChat}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto p-0">
+          <DialogHeader className="p-6 border-b">
+            <DialogTitle>Negotiation Discussion</DialogTitle>
+            <DialogDescription>
+              Discuss and finalize terms with {managerName}
+            </DialogDescription>
+          </DialogHeader>
+
+          {proposal && task && currentUserId && (
+            <div className="p-6">
+              <NegotiationChat
+                proposalId={proposal.id}
+                taskId={proposal.task_id}
+                currentUserId={currentUserId}
+                currentUserRole="service_provider"
+                otherPartyName={managerName}
+                initialProposal={proposal}
+                task={task}
+                onNegotiationFinalized={() => {
+                  setShowNegotiationChat(false);
+                  onProposalUpdated?.();
+                }}
+              />
+            </div>
+          )}
         </DialogContent>
       </Dialog>
     </>
