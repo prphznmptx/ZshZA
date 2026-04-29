@@ -22,21 +22,21 @@ CREATE TABLE IF NOT EXISTS public.task_message_attachments (
   message_id UUID NOT NULL,
   attachment_id UUID NOT NULL,
   created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
-  
+
   CONSTRAINT task_message_attachments_pkey PRIMARY KEY (id),
   CONSTRAINT task_message_attachments_unique UNIQUE (message_id, attachment_id),
-  CONSTRAINT task_message_attachments_message_id_fkey 
+  CONSTRAINT task_message_attachments_message_id_fkey
     FOREIGN KEY (message_id) REFERENCES task_messages (id) ON DELETE CASCADE,
-  CONSTRAINT task_message_attachments_attachment_id_fkey 
+  CONSTRAINT task_message_attachments_attachment_id_fkey
     FOREIGN KEY (attachment_id) REFERENCES attachments (id) ON DELETE CASCADE
-) TABLESPACE pg_default;
+);
 
 -- Create indexes for query optimization
-CREATE INDEX IF NOT EXISTS idx_task_message_attachments_message_id 
-  ON public.task_message_attachments USING btree (message_id) TABLESPACE pg_default;
+CREATE INDEX IF NOT EXISTS idx_task_message_attachments_message_id
+  ON public.task_message_attachments USING btree (message_id);
 
-CREATE INDEX IF NOT EXISTS idx_task_message_attachments_attachment_id 
-  ON public.task_message_attachments USING btree (attachment_id) TABLESPACE pg_default;
+CREATE INDEX IF NOT EXISTS idx_task_message_attachments_attachment_id
+  ON public.task_message_attachments USING btree (attachment_id);
 
 -- ===================================================================
 -- 2. ENHANCE task_negotiation_status TABLE
@@ -216,13 +216,16 @@ CREATE POLICY task_message_attachments_view_policy
     EXISTS (
       SELECT 1 FROM task_messages tm
       WHERE tm.id = task_message_attachments.message_id
-      AND (tm.sender_id = auth.uid() OR
-           EXISTS (
-             SELECT 1 FROM task_proposals tp
-             WHERE tp.task_id = tm.task_id
-             AND (tp.provider_id = (SELECT id FROM user_profiles WHERE user_id = auth.uid())
-                  OR tp.manager_id = auth.uid())
-           ))
+      AND (
+        tm.sender_id = auth.uid()
+        OR EXISTS (
+          SELECT 1 FROM task_proposals tp
+          WHERE tp.task_id = tm.task_id
+          AND (
+            tp.provider_id = (SELECT id FROM user_profiles WHERE user_id = auth.uid())
+            OR tp.manager_id = auth.uid()
+          )
+        )
       )
     )
   );

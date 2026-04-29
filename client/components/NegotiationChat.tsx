@@ -183,24 +183,40 @@ const NegotiationChat: React.FC<NegotiationChatProps> = ({
 
     setIsSubmitting(true);
     try {
-      const attachmentData = attachments.map((a) => ({
-        id: a.attachmentId,
-        name: a.originalName,
-        size: a.fileSize,
-      }));
+      // Insert message without attachments JSONB (will use junction table instead)
+      const { data: messageData, error: messageError } = await supabase
+        .from("task_messages")
+        .insert([
+          {
+            task_id: taskId,
+            sender_id: currentUserId,
+            sender_role: currentUserRole,
+            message_text: messageText,
+            attachments: null, // Not using JSONB anymore - using junction table
+          },
+        ])
+        .select("id")
+        .single();
 
-      const { error } = await supabase.from("task_messages").insert([
-        {
-          task_id: taskId,
-          sender_id: currentUserId,
-          sender_role: currentUserRole,
-          message_text: messageText,
-          attachments:
-            attachmentData.length > 0 ? attachmentData : null,
-        },
-      ]);
+      if (messageError) throw messageError;
+      if (!messageData) throw new Error("Failed to create message");
 
-      if (error) throw error;
+      // Link attachments to message using junction table (task_message_attachments)
+      if (attachments.length > 0) {
+        const attachmentLinks = attachments.map((a) => ({
+          message_id: messageData.id,
+          attachment_id: a.attachmentId,
+        }));
+
+        const { error: linkError } = await supabase
+          .from("task_message_attachments")
+          .insert(attachmentLinks);
+
+        if (linkError) {
+          console.warn("Warning: Failed to link some attachments:", linkError);
+          // Don't throw - message was created successfully, just log the attachment linking issue
+        }
+      }
 
       setMessageText("");
       setAttachments([]);
@@ -250,7 +266,7 @@ const NegotiationChat: React.FC<NegotiationChatProps> = ({
 
       // Create todo with agreed terms
       // CRITICAL: provider_id MUST be from user_profiles.id, NOT auth.users.id
-      const { error: todoError } = await supabase
+      const { data: todoData, error: todoError } = await supabase
         .from("todo_list")
         .insert([
           {
@@ -278,9 +294,12 @@ const NegotiationChat: React.FC<NegotiationChatProps> = ({
               size: a.fileSize,
             })) : null,
           },
-        ]);
+        ])
+        .select("id")
+        .single();
 
       if (todoError) throw todoError;
+      if (!todoData) throw new Error("Failed to create todo");
 
       toast({
         title: "Negotiation Finalized",
