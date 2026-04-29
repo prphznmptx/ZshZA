@@ -144,3 +144,10 @@ export interface TaskMessage {
   created_at: string
   updated_at: string
 }
+
+export interface TaskMessageAttachment {
+  id: string
+  message_id: string
+  attachment_id: string
+  created_at: string
+}
