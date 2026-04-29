@@ -36,7 +36,8 @@ interface KeyTerms {
 interface NegotiationChatProps {
   proposalId: string;
   taskId: string;
-  currentUserId: string;
+  currentUserId: string; // auth.users.id
+  currentUserProfileId: string; // user_profiles.id (required for todo_list.provider_id)
   currentUserRole: "manager" | "service_provider";
   otherPartyName: string;
   initialProposal: TaskProposal;
@@ -48,6 +49,7 @@ const NegotiationChat: React.FC<NegotiationChatProps> = ({
   proposalId,
   taskId,
   currentUserId,
+  currentUserProfileId,
   currentUserRole,
   otherPartyName,
   initialProposal,
@@ -217,6 +219,11 @@ const NegotiationChat: React.FC<NegotiationChatProps> = ({
   const handleFinalizeNegotiation = async () => {
     setIsFinalizingTodo(true);
     try {
+      // Validate required parameters
+      if (!currentUserProfileId) {
+        throw new Error("User profile not found. Please refresh and try again.");
+      }
+
       // Update proposal status to accepted
       const { error: proposalError } = await supabase
         .from("task_proposals")
@@ -230,21 +237,25 @@ const NegotiationChat: React.FC<NegotiationChatProps> = ({
 
       if (proposalError) throw proposalError;
 
-      // Get current user
-      const {
-        data: { user },
-        error: userError,
-      } = await supabase.auth.getUser();
+      // Determine provider_id based on role
+      // For service_provider: use currentUserProfileId
+      // For manager: use initialProposal.provider_id (the service provider's profile ID)
+      const providerId = currentUserRole === "service_provider"
+        ? currentUserProfileId
+        : initialProposal.provider_id;
 
-      if (userError || !user) throw new Error("User not authenticated");
+      if (!providerId) {
+        throw new Error("Provider ID is missing. Cannot create task.");
+      }
 
       // Create todo with agreed terms
+      // CRITICAL: provider_id MUST be from user_profiles.id, NOT auth.users.id
       const { error: todoError } = await supabase
         .from("todo_list")
         .insert([
           {
             task_id: taskId,
-            provider_id: currentUserRole === "service_provider" ? currentUserId : initialProposal.provider_id,
+            provider_id: providerId, // This MUST be user_profiles.id
             status: "pending",
             title: task.title,
             description: task.description,

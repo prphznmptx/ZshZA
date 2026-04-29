@@ -28,7 +28,8 @@ interface ServiceProviderProposalReviewProps {
   taskTitle: string;
   managerName: string;
   task?: Task;
-  currentUserId?: string;
+  currentUserId?: string; // auth.users.id
+  currentUserProfileId?: string; // user_profiles.id
   onProposalUpdated?: () => void;
 }
 
@@ -40,6 +41,7 @@ export const ServiceProviderProposalReview: React.FC<ServiceProviderProposalRevi
   managerName,
   task,
   currentUserId,
+  currentUserProfileId,
   onProposalUpdated,
 }) => {
   const [selectedAction, setSelectedAction] = useState<ProposalAction | null>(null);
@@ -432,12 +434,13 @@ export const ServiceProviderProposalReview: React.FC<ServiceProviderProposalRevi
             </DialogDescription>
           </DialogHeader>
 
-          {proposal && task && currentUserId && (
+          {proposal && task && currentUserId && currentUserProfileId && (
             <div className="p-6">
               <NegotiationChat
                 proposalId={proposal.id}
                 taskId={proposal.task_id}
                 currentUserId={currentUserId}
+                currentUserProfileId={currentUserProfileId}
                 currentUserRole="service_provider"
                 otherPartyName={managerName}
                 initialProposal={proposal}
